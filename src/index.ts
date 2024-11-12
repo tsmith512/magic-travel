@@ -10,12 +10,26 @@
  *
  * Learn more at https://developers.cloudflare.com/workers/
  */
-import { AutoRouter } from 'itty-router';
+import { IttyRouter, json, error } from 'itty-router';
 
-const router = AutoRouter();
+const router = IttyRouter();
 
 router.get('/', () => {
   return new Response('Hello World');
 });
 
-export default router satisfies ExportedHandler<Env>;
+router.all('/api/*', ({ query }, env) => {
+  const isAuth = query.key === env.PUBLIC_API_KEY;
+
+  if (!isAuth) {
+    return new Response('Unauthorized', { status: 403})
+  }
+});
+
+router.get('/api/directions/:from/:to/', ({ params }) => {
+  return new Response(`Directions from ${params.from} to ${params.to}`);
+});
+
+export default {
+  fetch: (req:Request, env:Env) => router.fetch(req, env).then(json).catch(error)
+} satisfies ExportedHandler<Env>;
