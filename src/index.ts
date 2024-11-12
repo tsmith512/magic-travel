@@ -10,9 +10,12 @@
  *
  * Learn more at https://developers.cloudflare.com/workers/
  */
+import { AutoRouter } from 'itty-router';
 
-export default {
-	async fetch(request, env, ctx): Promise<Response> {
-		return new Response('Hello World!');
-	},
-} satisfies ExportedHandler<Env>;
+const router = AutoRouter();
+
+router.get('/', () => {
+  return new Response('Hello World');
+});
+
+export default router satisfies ExportedHandler<Env>;
