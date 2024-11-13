@@ -18,6 +18,18 @@ router.get('/', () => {
   return new Response('Hello World');
 });
 
+router.get('/api/status', ({ query }, env) => {
+  const isAuth = query.key === env.PUBLIC_API_KEY;
+
+  return {
+    ready: env.MAGIC_TRAVEL_READY.toString(),
+    message: env.MAGIC_TRAVEL_STATUS,
+    auth: isAuth.toString(),
+    version: env.DEPLOYMENT_META.id,
+  };
+});
+
+// Authentication middleware for all other API routes
 router.all('/api/*', ({ query }, env) => {
   const isAuth = query.key === env.PUBLIC_API_KEY;
 

@@ -10,6 +10,9 @@ compatibility_flags = ["nodejs_compat"]
 [observability]
 enabled = true
 
+[version_metadata]
+binding = "DEPLOYMENT_META"
+
 # Automatically place your workloads in an optimal location to minimize latency.
 # If you are running back-end logic in a Worker, running it closer to your back-end infrastructure
 # rather than the end user may result in better performance.
@@ -22,8 +25,9 @@ enabled = true
 # - https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 # Note: Use secrets to store sensitive data.
 # - https://developers.cloudflare.com/workers/configuration/secrets/
-# [vars]
-# MY_VARIABLE = "production_value"
+[vars]
+MAGIC_TRAVEL_READY = true
+MAGIC_TRAVEL_STATUS = "Online, in early testing"
 
 # Bind the Workers AI model catalog. Run machine learning models, powered by serverless GPUs, on Cloudflare’s global network
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#workers-ai
