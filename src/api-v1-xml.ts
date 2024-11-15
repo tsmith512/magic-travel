@@ -1,5 +1,15 @@
 import { IttyRouter, createResponse } from 'itty-router';
 import { locationStringProcessor } from './util';
+import { routeCacheKeygen } from './cache';
+
+interface DrivingRouteInfo {
+  normalized?: any,
+  start: string | null,
+  end: string | null,
+  duration: number | null,
+  distance: number | null,
+  description: string | null,
+}
 
 export const router = IttyRouter({ base: '/api/v1'});
 
@@ -35,6 +45,14 @@ router.get('/directions/:from/:to/', async ({ params }, env) => {
   const from = locationStringProcessor(params.from);
   const to = locationStringProcessor(params.to);
 
+  // @TODO: Streamline this, and maybe abstract it out
+  const key = routeCacheKeygen(from, to);
+  const result = await env.ROUTES_CACHE.get(key) as string | null;
+
+  if (result) {
+    return JSON.parse(result) as DrivingRouteInfo;
+  }
+
   const directions = await
     fetch(`https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(from)}&destination=${encodeURIComponent(to)}&key=${env.GMAPS_API_KEY}&region=us&mode=driving`)
     .then(res => res.json()) as google.maps.DirectionsResult;
@@ -44,7 +62,7 @@ router.get('/directions/:from/:to/', async ({ params }, env) => {
   }
 
   const route = directions?.routes[0];
-  const output = {
+  const output: DrivingRouteInfo = {
     // @TODO: Remove this, just for debugging.
     normalized: JSON.stringify({
       from,
@@ -56,6 +74,9 @@ router.get('/directions/:from/:to/', async ({ params }, env) => {
     distance: route.legs[0].distance?.value ?? null,
     description: route.summary ?? null,
   };
+
+  // @TODO: Hold routes for a day. Will want to extend after testing.
+  await env.ROUTES_CACHE.put(key, JSON.stringify(output), { expirationTtl: (60 * 60 * 24 )});
 
   return output;
 });
