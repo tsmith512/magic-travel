@@ -36,7 +36,7 @@ router.get('/directions/:from/:to/', async ({ params }, env) => {
   const to = locationStringProcessor(params.to);
 
   const directions = await
-    fetch(`https://maps.googleapis.com/maps/api/directions/json?origin=${from}&destination=${to}&key=${env.GMAPS_API_KEY}&region=us&mode=driving`)
+    fetch(`https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(from)}&destination=${encodeURIComponent(to)}&key=${env.GMAPS_API_KEY}&region=us&mode=driving`)
     .then(res => res.json()) as google.maps.DirectionsResult;
 
   if (directions.routes.length < 1) {
