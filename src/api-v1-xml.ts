@@ -1,4 +1,5 @@
 import { IttyRouter, createResponse } from 'itty-router';
+import { locationStringProcessor } from './util';
 
 export const router = IttyRouter({ base: '/api/v1'});
 
@@ -31,8 +32,11 @@ router.all('/*', ({ query }, env) => {
 // Simple Directions Gathering
 router.get('/directions/:from/:to/', async ({ params }, env) => {
   // @TODO: Would it be better to load the GMaps API library here?
+  const from = locationStringProcessor(params.from);
+  const to = locationStringProcessor(params.to);
+
   const directions = await
-    fetch(`https://maps.googleapis.com/maps/api/directions/json?origin=${params.from}&destination=${params.to}&key=${env.GMAPS_API_KEY}&region=us&mode=driving`)
+    fetch(`https://maps.googleapis.com/maps/api/directions/json?origin=${from}&destination=${to}&key=${env.GMAPS_API_KEY}&region=us&mode=driving`)
     .then(res => res.json()) as google.maps.DirectionsResult;
 
   if (directions.routes.length < 1) {
@@ -41,6 +45,11 @@ router.get('/directions/:from/:to/', async ({ params }, env) => {
 
   const route = directions?.routes[0];
   const output = {
+    // @TODO: Remove this, just for debugging.
+    normalized: JSON.stringify({
+      from,
+      to,
+    }),
     start: route.legs[0].start_address ?? null,
     end: route.legs[0].end_address ?? null,
     duration: route.legs[0].duration?.value ?? null,
