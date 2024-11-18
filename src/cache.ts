@@ -9,9 +9,10 @@
  * @param to (string) End of the route
  * @returns (string) KV key to cache route information
  */
-export const routeCacheKeygen = (from: string, to: string): string => {
-  return `${from}--${to}`
-    .replace(/[,]/g, '')
-    .replace(/[^a-zA-Z0-9- ]/g, '')
-    .replaceAll(' ', '-')
+export const routeCacheKeygen = async (from: string, to: string): Promise<string> => {
+  const asUint8 = new TextEncoder().encode(`${from}--${to}`);
+  const hashBuffer = await crypto.subtle.digest('MD5', asUint8);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 };

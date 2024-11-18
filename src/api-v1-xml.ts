@@ -51,7 +51,7 @@ router.get('/directions/:from/:to/', async ({ params }, env) => {
   const to = locationStringProcessor(params.to);
 
   // @TODO: Streamline this, and maybe abstract it out
-  const key = routeCacheKeygen(from, to);
+  const key = await routeCacheKeygen(from, to);
   const result = await env.ROUTES_CACHE.get(key) as string | null;
 
   if (result) {
@@ -63,6 +63,7 @@ router.get('/directions/:from/:to/', async ({ params }, env) => {
     .then(res => res.json()) as google.maps.DirectionsResult;
 
   if (directions.routes.length < 1) {
+    // @TODO: Cache errors somehow.
     return new Response('Failed to find a driving route', {status: 500});
   }
 
