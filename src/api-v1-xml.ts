@@ -1,6 +1,7 @@
 import { IttyRouter, createResponse } from 'itty-router';
 import { locationStringProcessor } from './util';
 import { routeCacheKeygen } from './cache';
+import { authCheck } from './auth';
 
 interface DrivingRouteInfo {
   normalized?: any,
@@ -31,10 +32,14 @@ router.get('/status', ({ query }, env) => {
 });
 
 // Authentication middleware for all other API routes
-router.all('/*', ({ query }, env) => {
-  const isAuth = query.key === env.PUBLIC_API_KEY;
+router.all('/*', async ({ query }, env) => {
+  let authenticated = false;
 
-  if (!isAuth) {
+  if (typeof query.key === 'string') {
+    authenticated = await authCheck(query.key, env);
+  }
+
+  if (!authenticated) {
     return new Response('Unauthorized', { status: 403})
   }
 });

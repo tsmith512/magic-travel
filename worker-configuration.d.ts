@@ -6,5 +6,6 @@ interface Env {
 	MAGIC_TRAVEL_STATUS: "Online, in early testing";
 	GMAPS_API_KEY: string;
 	PUBLIC_API_KEY: string;
+	MAGIC_TRAVEL_DB: D1Database;
 	DEPLOYMENT_META: { id: string; tag: string };
 }
