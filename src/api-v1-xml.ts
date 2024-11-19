@@ -1,4 +1,4 @@
-import { IttyRouter, createResponse } from 'itty-router';
+import { IRequest, IRequestStrict, IttyRouter, createResponse } from 'itty-router';
 import { locationStringProcessor } from './util';
 import { routeCacheKeygen } from './cache';
 import { authCheck } from './auth';
@@ -12,6 +12,10 @@ export interface DrivingRouteInfo {
   distance: number,
   description: string,
 }
+
+type AuthenticatedRequest = {
+  verifiedKey: string
+} & IRequestStrict;
 
 export const router = IttyRouter({ base: '/api/v1'});
 
@@ -33,11 +37,15 @@ router.get('/status', ({ query }, env) => {
 });
 
 // Authentication middleware for all other API routes
-router.all('/*', async ({ query }, env) => {
+router.all('/*', async (request: AuthenticatedRequest, env) => {
   let authenticated = false;
 
-  if (typeof query.key === 'string') {
-    authenticated = await authCheck(query.key, env);
+  if (typeof request.query.key === 'string') {
+    authenticated = await authCheck(request.query.key, env);
+
+    if (authenticated) {
+      request.verifiedKey = request.query.key;
+    }
   }
 
   if (!authenticated) {
@@ -46,10 +54,10 @@ router.all('/*', async ({ query }, env) => {
 });
 
 // Simple Directions Gathering
-router.get('/directions/:from/:to/', async ({ params }, env) => {
+router.get('/directions/:from/:to/', async (request: AuthenticatedRequest, env) => {
   // @TODO: Would it be better to load the GMaps API library here?
-  const from = locationStringProcessor(params.from);
-  const to = locationStringProcessor(params.to);
+  const from = locationStringProcessor(request.params.from);
+  const to = locationStringProcessor(request.params.to);
 
   // @TODO: Streamline this, and maybe abstract it out
   const key = await routeCacheKeygen(from, to);
