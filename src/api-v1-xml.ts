@@ -13,8 +13,9 @@ export interface DrivingRouteInfo {
   description: string,
 }
 
-type AuthenticatedRequest = {
-  verifiedKey: string
+export type AuthenticatedRequest = {
+  verifiedKey: string,
+  sheetVersion: string,
 } & IRequestStrict;
 
 export const router = IttyRouter({ base: '/api/v1'});
@@ -39,6 +40,13 @@ router.get('/status', ({ query }, env) => {
 // Authentication middleware for all other API routes
 router.all('/*', async (request: AuthenticatedRequest, env) => {
   let authenticated = false;
+
+  // @TODO: This belongs elsewhere but this function runs at the right time.
+  if (typeof request.query.sheet_version === 'string') {
+    request.sheetVersion = request.query.sheet_version;
+  } else {
+    request.sheetVersion = 'not reported';
+  }
 
   if (typeof request.query.key === 'string') {
     authenticated = await authCheck(request.query.key, env);
