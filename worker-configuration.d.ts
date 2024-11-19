@@ -7,5 +7,6 @@ interface Env {
 	GMAPS_API_KEY: string;
 	PUBLIC_API_KEY: string;
 	MAGIC_TRAVEL_DB: D1Database;
+	MAGIC_TRAVEL_ANALYTICS: AnalyticsEngineDataset;
 	DEPLOYMENT_META: { id: string; tag: string };
 }

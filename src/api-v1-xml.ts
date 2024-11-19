@@ -2,14 +2,15 @@ import { IttyRouter, createResponse } from 'itty-router';
 import { locationStringProcessor } from './util';
 import { routeCacheKeygen } from './cache';
 import { authCheck } from './auth';
+import { writeAnalyticsEvent } from './analytics';
 
-interface DrivingRouteInfo {
+export interface DrivingRouteInfo {
   normalized?: any,
-  start: string | null,
-  end: string | null,
-  duration: number | null,
-  distance: number | null,
-  description: string | null,
+  start: string,
+  end: string,
+  duration: number,
+  distance: number,
+  description: string,
 }
 
 export const router = IttyRouter({ base: '/api/v1'});
@@ -52,10 +53,11 @@ router.get('/directions/:from/:to/', async ({ params }, env) => {
 
   // @TODO: Streamline this, and maybe abstract it out
   const key = await routeCacheKeygen(from, to);
-  const result = await env.ROUTES_CACHE.get(key) as string | null;
+  const result = JSON.parse(await env.ROUTES_CACHE.get(key)) as DrivingRouteInfo | null;
 
   if (result) {
-    return JSON.parse(result) as DrivingRouteInfo;
+    writeAnalyticsEvent(result, request, 'KV', env);
+    return result;
   }
 
   const directions = await
@@ -64,6 +66,7 @@ router.get('/directions/:from/:to/', async ({ params }, env) => {
 
   if (directions.routes.length < 1) {
     // @TODO: Cache errors somehow.
+    console.log('Failed to find a driving route: ' + JSON.stringify(directions));
     return new Response('Failed to find a driving route', {status: 500});
   }
 
@@ -74,16 +77,17 @@ router.get('/directions/:from/:to/', async ({ params }, env) => {
       from,
       to,
     }),
-    start: route.legs[0].start_address ?? null,
-    end: route.legs[0].end_address ?? null,
-    duration: route.legs[0].duration?.value ?? null,
-    distance: route.legs[0].distance?.value ?? null,
-    description: route.summary ?? null,
+    start: route.legs[0].start_address ?? from,
+    end: route.legs[0].end_address ?? to,
+    duration: route.legs[0].duration?.value ?? 0,
+    distance: route.legs[0].distance?.value ?? 0,
+    description: route.summary ?? '',
   };
 
   // @TODO: Hold routes for a day. Will want to extend after testing.
   await env.ROUTES_CACHE.put(key, JSON.stringify(output), { expirationTtl: (60 * 60 * 24 )});
 
+  writeAnalyticsEvent(output, request, 'API', env);
   return output;
 });
 
