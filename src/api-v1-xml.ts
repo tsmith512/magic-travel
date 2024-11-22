@@ -5,12 +5,12 @@ import { authCheck } from './auth';
 import { writeAnalyticsEvent } from './analytics';
 
 export interface DrivingRouteInfo {
-  normalized?: any,
   start: string,
   end: string,
   duration: number,
   distance: number,
   description: string,
+  debug?: any,
 }
 
 export type AuthenticatedRequest = {
@@ -105,16 +105,21 @@ router.get('/directions/:from/:to/', async (request: AuthenticatedRequest, env) 
 
   const route = directions?.routes[0];
   const output: DrivingRouteInfo = {
-    // @TODO: Remove this, just for debugging.
-    normalized: JSON.stringify({
-      from,
-      to,
-    }),
-    start: route.legs[0].start_address ?? from,
-    end: route.legs[0].end_address ?? to,
+    // @TODO: Return (and cache) with our normalized place names instead of the
+    // addresses from the Directions API.
+    // start: route.legs[0].start_address ?? from,
+    // end: route.legs[0].end_address ?? to,
+    start: from,
+    end: to,
     duration: route.legs[0].duration?.value ?? 0,
     distance: route.legs[0].distance?.value ?? 0,
     description: route.summary ?? '',
+    debug: JSON.stringify({
+      addresses: [
+        route.legs[0].start_address ?? null,
+        route.legs[0].end_address ?? null,
+      ]
+    }),
   };
 
   // @TODO: Hold routes for a day. Will want to extend after testing.
