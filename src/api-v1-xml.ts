@@ -67,9 +67,26 @@ router.get('/directions/:from/:to/', async (request: AuthenticatedRequest, env) 
   const from = locationStringProcessor(request.params.from);
   const to = locationStringProcessor(request.params.to);
 
+  const requestUrl = new URL(request.url);
+  const cdnCache = caches.default;
+  const cdnCacheKey = `${requestUrl.origin}/directions/${from}/${to}/`;
+  const cdnCacheResult = await cdnCache.match(cdnCacheKey);
+  if (cdnCacheResult) {
+    writeAnalyticsEvent({
+      // CDN will return a complete response, not a result object. Rather than
+      // pick it apart, just skip it.
+      start: from,
+      end: to,
+      duration: 0,
+      distance: 0,
+      description: '',
+    }, request, 'CDN', env);
+    return cdnCacheResult;
+  }
+
   // @TODO: Streamline this, and maybe abstract it out
-  const key = await routeCacheKeygen(from, to);
-  const result = JSON.parse(await env.ROUTES_CACHE.get(key)) as DrivingRouteInfo | null;
+  const kvCacheKey = await routeCacheKeygen(from, to);
+  const result = JSON.parse(await env.ROUTES_CACHE.get(kvCacheKey)) as DrivingRouteInfo | null;
 
   if (result) {
     writeAnalyticsEvent(result, request, 'KV', env);
@@ -101,7 +118,10 @@ router.get('/directions/:from/:to/', async (request: AuthenticatedRequest, env) 
   };
 
   // @TODO: Hold routes for a day. Will want to extend after testing.
-  await env.ROUTES_CACHE.put(key, JSON.stringify(output), { expirationTtl: (60 * 60 * 24 )});
+  await env.ROUTES_CACHE.put(kvCacheKey, JSON.stringify(output), { expirationTtl: (60 * 60 * 24 )});
+
+  // @TODO: Generate response object and save into CDN cache. How to set an expiration time??
+  await cdnCache.put(cdnCacheKey, xml(output));
 
   writeAnalyticsEvent(output, request, 'API', env);
   return output;
