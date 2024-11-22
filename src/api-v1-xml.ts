@@ -109,6 +109,8 @@ router.get('/directions/:from/:to/', async (request: AuthenticatedRequest, env) 
     // addresses from the Directions API.
     // start: route.legs[0].start_address ?? from,
     // end: route.legs[0].end_address ?? to,
+
+    // WARNING: Spreadsheet cares about the order here, don't re-order anything.
     start: from,
     end: to,
     duration: route.legs[0].duration?.value ?? 0,
@@ -136,6 +138,9 @@ router.get('/directions/:from/:to/', async (request: AuthenticatedRequest, env) 
  * Response formatter to take an object's key:value entries as a simple XML
  * document for Google Sheet's IMPORTXML() function. There is no GSheets native
  * support for JSON.
+ *
+ * @TODO: WARNING: The XPath interpreter that reads these will return them into
+ * the spreadsheet in order... pulling this apart would probably be better.
  */
 export const xml = createResponse('text/xml', (input) => {
   return [
