@@ -14,6 +14,7 @@ export const locationStringProcessor = (input: string): string => {
     .toLocaleUpperCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   ;
-    // TODO: State --> ST?
-    // TODO: Drop address components?
+  // @TODO: State --> ST? --- Maybe, but want to get it right. Watch usage data.
+  // X-TODO: Drop address components? --- No, could lead to inaccurate directions
+  //         but note in privacy policy how these data are retained and discourage.
 };

@@ -57,13 +57,12 @@ router.all('/*', async (request: AuthenticatedRequest, env) => {
   }
 
   if (!authenticated) {
-    return new Response('Unauthorized', { status: 403})
+    return new Response('Unauthorized', { status: 403});
   }
 });
 
 // Simple Directions Gathering
 router.get('/directions/:from/:to/', async (request: AuthenticatedRequest, env) => {
-  // @TODO: Would it be better to load the GMaps API library here?
   const from = locationStringProcessor(request.params.from);
   const to = locationStringProcessor(request.params.to);
 
@@ -93,24 +92,29 @@ router.get('/directions/:from/:to/', async (request: AuthenticatedRequest, env) 
     return result;
   }
 
+  // Rather than load the whole Google Maps API, use the same HTTP endpoint that
+  // v1 of the Spreadsheet used.
   const directions = await
     fetch(`https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(from)}&destination=${encodeURIComponent(to)}&key=${env.GMAPS_API_KEY}&region=us&mode=driving`)
     .then(res => res.json()) as google.maps.DirectionsResult;
 
   if (directions.routes.length < 1) {
-    // @TODO: Cache errors somehow.
     console.log('Failed to find a driving route: ' + JSON.stringify(directions));
-    return new Response('Failed to find a driving route', {status: 500});
+
+    // Cache this error at the CDN level for 2 days.
+    // @TODO: This would be colo-specific and would fend off requests from the
+    // same person but may need to be more global.
+    // @TODO: Would it be useful to report this error to WAE?
+    const cdnCacheErrResponse = new Response('Failed to find a driving route', {status: 500});;
+    cdnCacheErrResponse.headers.set('Cache-Control', `max-age=${60*60*48}`)
+    await cdnCache.put(cdnCacheKey, cdnCacheErrResponse);
+    return cdnCacheErrResponse;
   }
 
   const route = directions?.routes[0];
   const output: DrivingRouteInfo = {
-    // @TODO: Return (and cache) with our normalized place names instead of the
-    // addresses from the Directions API.
-    // start: route.legs[0].start_address ?? from,
-    // end: route.legs[0].end_address ?? to,
-
     // WARNING: Spreadsheet cares about the order here, don't re-order anything.
+    // @TODO: Uhhh, then don't do it this way.
     start: from,
     end: to,
     duration: route.legs[0].duration?.value ?? 0,
@@ -124,11 +128,15 @@ router.get('/directions/:from/:to/', async (request: AuthenticatedRequest, env) 
     }),
   };
 
-  // @TODO: Hold routes for a day. Will want to extend after testing.
-  await env.ROUTES_CACHE.put(kvCacheKey, JSON.stringify(output), { expirationTtl: (60 * 60 * 24 )});
+  // Hold routes for a week. May want to extend after testing.
+  await env.ROUTES_CACHE.put(kvCacheKey, JSON.stringify(output), {
+    expirationTtl: (60 * 60 * 24 * 7 ),
+  });
 
-  // @TODO: Generate response object and save into CDN cache. How to set an expiration time??
-  await cdnCache.put(cdnCacheKey, xml(output));
+  // Generate response object and save into CDN cache for a day.
+  const cdnCacheResponse = xml(output);
+  cdnCacheResponse.headers.set('Cache-Control', `max-age=${60*60*24}`)
+  await cdnCache.put(cdnCacheKey, cdnCacheResponse);
 
   writeAnalyticsEvent(output, request, 'API', env);
   return output;
