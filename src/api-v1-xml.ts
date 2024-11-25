@@ -26,13 +26,23 @@ router.get('/', () => {
 });
 
 // Pre-Auth Status Header
-router.get('/status', ({ query }, env) => {
-  const isAuth = query.key === env.PUBLIC_API_KEY;
+router.get('/status', async (request, env) => {
+  let authenticated = false;
+
+  // @TODO: This is straight up repeated in the /* handler, abstract out.
+  if (typeof request.query.key === 'string') {
+    authenticated = await authCheck(request.query.key, env);
+
+    if (authenticated) {
+      request.verifiedKey = request.query.key;
+    }
+  }
+
 
   return {
     ready: env.MAGIC_TRAVEL_READY.toString(),
     message: env.MAGIC_TRAVEL_STATUS,
-    auth: isAuth.toString(),
+    auth: authenticated.toString(),
     version: env.DEPLOYMENT_META.id,
   };
 });
