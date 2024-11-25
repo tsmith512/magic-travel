@@ -18,6 +18,24 @@ const router = IttyRouter();
 
 router.all('/api/v1/*', (req, env) => v1API.fetch(req, env).then(v1XML));
 
+router.get('/', () => {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      'Location': 'https://tsmith.com/blog/2020/magic-travel-spreadsheet/',
+    }
+  })
+});
+
+router.get('/privacy', () => {
+  return new Response(null, {
+    status: 301,
+    headers: {
+      'Location': 'https://tsmith.com/privacy',
+    }
+  })
+});
+
 export default {
   fetch: (req:Request, env:Env) => router.fetch(req, env),
 } satisfies ExportedHandler<Env>;
