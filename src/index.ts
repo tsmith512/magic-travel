@@ -36,6 +36,12 @@ router.get('/privacy', () => {
   })
 });
 
+router.get('*', () => {
+  return new Response(null, {
+    status: 404,
+  });
+});
+
 export default {
   fetch: (req:Request, env:Env) => router.fetch(req, env),
 } satisfies ExportedHandler<Env>;
