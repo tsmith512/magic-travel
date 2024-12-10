@@ -48,6 +48,8 @@ router.get('/status', async (request, env) => {
 });
 
 // Authentication middleware for all other API routes
+// @TODO: Doing this first will cause a D1 read on every inbound request, though
+// those are pretty cheap.
 router.all('/*', async (request: AuthenticatedRequest, env) => {
   let authenticated = false;
 
@@ -138,14 +140,14 @@ router.get('/directions/:from/:to/', async (request: AuthenticatedRequest, env) 
     }),
   };
 
-  // Hold routes for a week. May want to extend after testing.
+  // Hold routes for a month.
   await env.ROUTES_CACHE.put(kvCacheKey, JSON.stringify(output), {
-    expirationTtl: (60 * 60 * 24 * 7 ),
+    expirationTtl: (60 * 60 * 24 * 30 ),
   });
 
-  // Generate response object and save into CDN cache for a day.
+  // Generate response object and save into CDN cache for a week.
   const cdnCacheResponse = xml(output);
-  cdnCacheResponse.headers.set('Cache-Control', `max-age=${60*60*24}`)
+  cdnCacheResponse.headers.set('Cache-Control', `max-age=${60 * 60 * 24 * 7}`);
   await cdnCache.put(cdnCacheKey, cdnCacheResponse);
 
   writeAnalyticsEvent(output, request, 'API', env);
