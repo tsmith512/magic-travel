@@ -109,15 +109,28 @@ router.get('/directions/:from/:to/', async (request: AuthenticatedRequest, env) 
     .then(res => res.json()) as google.maps.DirectionsResult;
 
   if (directions.routes.length < 1) {
-    console.log('Failed to find a driving route: ' + JSON.stringify(directions));
+    console.log('Couldn\'t find driving route for this segment: ' + JSON.stringify(directions));
 
     // Cache this error at the CDN level for 2 days.
     // @TODO: This would be colo-specific and would fend off requests from the
     // same person but may need to be more global.
     // @TODO: Would it be useful to report this error to WAE?
-    const cdnCacheErrResponse = new Response('Failed to find a driving route', {status: 500});;
-    cdnCacheErrResponse.headers.set('Cache-Control', `max-age=${60*60*48}`)
-    await cdnCache.put(cdnCacheKey, cdnCacheErrResponse);
+    const errOutput: DrivingRouteInfo = {
+      start: from,
+      end: to,
+      duration: -1,
+      distance: -1,
+      description: 'Couldn\'t find driving route for this segment',
+      debug: JSON.stringify({
+        upstream: directions,
+      }),
+    };
+
+    // Calling this out. IMPORTXML will error if HTTP status is not 200, so
+    // mark this as a success anyway so we can gracefully handle it in the sheet.
+    const cdnCacheErrResponse = xml(errOutput, { status: 200 });
+    cdnCacheErrResponse.headers.set('Cache-Control', `max-age=${60*60*48}`);
+    await cdnCache.put(cdnCacheKey, cdnCacheErrResponse.clone());
     return cdnCacheErrResponse;
   }
 

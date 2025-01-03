@@ -1,5 +1,37 @@
 # Google Sheet Template Changelog
 
+## v2.0-rc2
+
+**Summary:**
+
+- With new segment-level error reporting from backend, report in itinerary rows
+- Clean up / standardize some formulas
+
+```
+Column E: Unchanged
+
+Column H: Est Hrs
+=IF($E2>0, ROUND($E2/60/60*1.1, 1), )
+
+Column I: Est Mi (stop showing 0 when it should be blank)
+=IF($F2>0, ROUND($F2/1609, 1), )
+
+Column J: That map link. Now _also_ provide an error message if there is one
+=IF(
+  0<$F2,
+  IF(NOT(ISBLANK($G2)),
+    HYPERLINK("https://www.google.com/maps/dir/" & $C2 & "/" & $D2 & "/", "Map to " & $D2 & " via " & $G2),
+    HYPERLINK("https://www.google.com/maps/dir/" & $C2 & "/" & $D2 & "/", "Map " & $C2 & " to " & $D2)
+  ),
+  IF(
+    $F2<0,
+    $G2, // use description as a plaintext value
+    // blank
+  )
+)
+
+```
+
 ## v2.0-rc1
 
 **Summary:**
