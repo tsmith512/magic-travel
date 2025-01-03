@@ -92,6 +92,57 @@ Server Version
 =IMPORTXML("https://magic-travel.tsmith.net/api/v1/status?sheet_version=" & SHEET_VERSION, "//version")
 ```
 
+## v2.0-rc1
+
+**Summary:**
+
+- Changed "Config" tab to "Options and Info" with more friendly labels and grouping:
+
+| 🔑 Access Key for Magic Travel: | ((KEY)) | ((KEY STATUS)) |
+|:---|:---|---:|
+|  |  |  |
+| 📝 Options you set: | Your ideal drive miles? | 250 |
+|  | Max drive miles? | 500 |
+|  | Ideal drive hours? | 4 |
+|  | Max drive hours? | 7 |
+|  |  |  |
+| 🚦System information: | Status message | ((STATUS MESSAGE)) |
+|  | Server version | ((VERSION)) |
+|  | This template version | v2.0-rc1 |
+|  |  |  |
+| ℹ️ About and credits: | [How this spreadsheet works](https://tsmith.com/blog/2020/magic-travel-spreadsheet/?utm_source=travel-spreadsheet-template&utm_medium=website&utm_campaign=travel-spreadsheet-template) |  |
+|  | [Created by Taylor Smith](https://tsmith.com/?utm_source=travel-spreadsheet-template&utm_medium=website&utm_campaign=travel-spreadsheet-template) |  |
+
+
+Key Status:
+
+```
+=IF(ISBLANK(B1), "🔐 Please enter an access key in B1.", IF(IMPORTXML("https://magic-travel.tsmith.net/api/v1/status?key=" & APIKEY, "//auth") = TRUE, "🟢 Authorized. Let's drive!", "🔴 Not authorized. Look for messages below."))
+```
+
+_With conditional formatting to highlight an empty cell._
+
+Status Message:
+
+```
+=IF(IMPORTXML("https://magic-travel.tsmith.net/api/v1/status", "//ready") = TRUE, "🟢 ", "🔴 ") & IMPORTXML("https://magic-travel.tsmith.net/api/v1/status", "//message")
+```
+
+Version:
+
+```
+=IMPORTXML("https://magic-travel.tsmith.net/api/v1/status?sheet_version=" & SHEET_VERSION, "//version")
+```
+
+This removes the `key` query arg from all cells except the key check.
+
+This removes the `sheet_version` query arg from all cells except the server version fetch.
+
+This does make a bunch of requests to the status endpoint but without a key or
+sheet version, at least they're pretty lightweight to process.
+
+Named and protected ranges have been adjusted accordingly.
+
 ## v2.0-beta2
 
 **Summary:**
