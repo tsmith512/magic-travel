@@ -1,5 +1,65 @@
 # Google Sheet Template Changelog
 
+## v2.0-rc1
+
+**Summary:**
+
+- Updated the itinerary header row to do a status and key check
+
+Header status and key check
+
+```
+A1:
+=IF(AND(IMPORTXML("https://magic-travel.tsmith.net/api/v1/status", "//ready") = TRUE, IMPORTXML("https://magic-travel.tsmith.net/api/v1/status?key=" & APIKEY, "//auth") = TRUE), "Day", "🔴")
+
+B1:
+=IF(NOT(A1="Day"), "Error: check the", "Drive Date")
+
+C1:
+=IF(NOT(A1="Day"), "'Options & Info' tab", "Start")
+
+D1:
+=IF(NOT(A1="Day"), "for more info.", "End/Overnight")
+
+H1:
+=IF(NOT(A1="Day"), , "Est. Hours (" & SUM(H2:H) & "hrs)")
+
+I1:
+=IF(NOT(A1="Day"), , "Est. Miles (" & SUM(I2:I) & "mi)")
+```
+
+and adjusted the Conditional Formatting for `A1:G1` to show pink background / red
+foreground when custom formula `=NOT(INDIRECT("A1")="Day")` is true.
+
+**Summary:**
+
+- Update domain name
+- Remove API key from status callers, which drops 2 D1 database reads
+
+Getting Route Overview (Column E)
+
+```
+=IF(AND( NOT(ISBLANK($C2)), NOT(ISBLANK($D2)), NOT($C2=$D2) ), TRANSPOSE(IMPORTXML("https://magic-travel.tsmith.net/api/v1/directions/" & C2 & "/" & D2 & "/?key=" & APIKEY & "&sheet_version=" & SHEET_VERSION, "//*[position()=3 or position()=4 or position()=5]")), 0)
+```
+
+Auth check
+
+```
+=IF(IMPORTXML("https://magic-travel.tsmith.net/api/v1/status?key=" & APIKEY, "//auth") = TRUE, "Key is authorized; let's drive!", "This key is not authorized.")
+```
+
+Server Information
+
+```
+=IMPORTXML("https://magic-travel.tsmith.net/api/v1/status?sheet_version=" & SHEET_VERSION, "//message")
+```
+
+Server Version
+
+```
+=IMPORTXML("https://magic-travel.tsmith.net/api/v1/status?sheet_version=" & SHEET_VERSION, "//version")
+```
+
 ## v2.0-beta2
 
 **Summary:**
