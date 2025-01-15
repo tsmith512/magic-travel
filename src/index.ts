@@ -22,9 +22,9 @@ router.get('/', () => {
   return new Response(null, {
     status: 302,
     headers: {
-      'Location': 'https://tsmith.com/blog/2020/magic-travel-spreadsheet/',
+      'Location': 'https://tsmith.com/blog/2025/magic-travel-rebuild/?utm_source=travel-spreadsheet-template&utm_medium=website&utm_campaign=travel-spreadsheet-template',
     }
-  })
+  });
 });
 
 router.get('/privacy', () => {
